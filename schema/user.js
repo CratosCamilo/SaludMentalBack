@@ -1,62 +1,114 @@
-const Mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const { generateAccessToken, generateRefreshToken } = require("../auth/sign");
-const getUserInfo = require("../lib/getUserInfo");
-const Token = require("../schema/token");
+const mysql = require('mysql2');
+const bcrypt = require('bcrypt');
+const { generateAccessToken, generateRefreshToken } = require('../auth/sign');
+const Token = require('../schema/token');
 
-const UserSchema = new Mongoose.Schema({
-    id: { type: Object },
-    username: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    name: { type: String, required: true },
+const db = mysql.createPool({
+    host: 'localhost',
+    user: 'usuario',
+    password: 'user34Aurea',
+    database: 'ProyectoIntegrador1', 
+    port: 3307
 });
 
-UserSchema.pre("save", function (next) {
-    if (this.isModified("password") || this.isNew) {
-        const document = this;
+const query = (sql, values) => {
+  return new Promise((resolve, reject) => {
+    db.query(sql, values, (error, results) => {
+      if (error) reject(error);
+      resolve(results);3
+    });
+  });
+};
 
-        bcrypt.hash(document.password, 10, (err, hash) => {
-            if (err) {
-                next(err);
-            } else {
-                document.password = hash;
-                next();
-            }
-        });
-    } else {
-        next();
+const User = {
+  async usernameExists(username) {
+    const sql = 'SELECT COUNT(*) AS count FROM USUARIOS WHERE emailUsuario = ?';
+    const result = await query(sql, [username]);
+    return result[0].count > 0;
+  },
+
+  async isCorrectPassword(email, password) {
+    const sql = 'SELECT pwdUsuario FROM USUARIOS WHERE emailUsuario = ?';
+    const result = await query(sql, [email]);
+    if (result.length === 0) return false;
+
+    const hashedPassword = result[0].pwdUsuario;
+    return bcrypt.compare(password, hashedPassword);
+  },
+
+  async insertHojaVida(Address, userStatus, CellphoneNumber, IdEps) {
+    try {
+      const queryStr = `INSERT INTO HOJAS_VIDA (direccion, estadoUsuario, telefonoUsuario, idEps) VALUES (?, ?, ?, ?)`;
+      const result = await query(queryStr, [Address, userStatus, CellphoneNumber, IdEps]);
+    } catch (error) {
+      console.error('Error inserting hoja de vida:', error);
+      throw error;
     }
-});
+  },
 
-UserSchema.methods.usernameExists = async function (username) {
-    const result = await Mongoose.model("User").find({ username: username });
-    return result.length > 0;
-};
-
-UserSchema.methods.isCorrectPassword = async function (password, hash) {
-    console.log(password, hash);
-    const same = await bcrypt.compare(password, hash);
-
-    return same;
-};
-
-UserSchema.methods.createAccessToken = function () {
-    return generateAccessToken(getUserInfo(this));
-};
-
-UserSchema.methods.createRefreshToken = async function (next) {
-    const refreshToken = generateRefreshToken(getUserInfo(this));
-
-    console.error("refreshToken", refreshToken);
+  async createUser(userData) {
+    const {
+      Identification,
+      Names,
+      Surnames,
+      Email,
+      Password,
+      IdBranch,
+      IdRole,
+      UserStatus,
+      IdSpeciality,
+      Address,
+      userStatus,
+      CellphoneNumber,
+      IdEps,
+      IdTypePatient
+    } = userData;
 
     try {
-        await new Token({ token: refreshToken }).save();
-        console.log("Token saved", refreshToken);
-        return refreshToken;
+      const hashedPassword = await bcrypt.hash(Password, 10);
+
+      
+      const userQuery = `
+        INSERT INTO USUARIOS (CC, nombreUsuario, apellidoUsuario, emailUsuario, pwdUsuario, idSede, idRol, estadoUsuario, idEspecialidad, idTipoPaciente)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      const userValues = [
+        Identification,
+        Names,
+        Surnames,
+        Email,
+        hashedPassword,
+        IdBranch,
+        IdRole,
+        UserStatus,
+        IdSpeciality,
+        IdTypePatient
+      ];
+      await query(userQuery, userValues);
+
+      return { success: true };
     } catch (error) {
-        console.error(error);
-        //next(new Error("Error creating token"));
+      console.error('Error creating user:', error);
+      return { success: false, error: error.message };
     }
+  },
+
+  createAccessToken(user) {
+    return generateAccessToken(user);
+  },
+
+  async createRefreshToken(user) {
+    const refreshToken = generateRefreshToken(user);
+
+    try {
+      await new Token({ token: refreshToken }).save();
+      console.log('Token saved', refreshToken);
+      return refreshToken;
+    } catch (error) {
+      console.error('Error creating token:', error);
+      throw new Error('Error creating token');
+    }
+  }
 };
 
-module.exports = Mongoose.model("User", UserSchema);
+module.exports = User;
