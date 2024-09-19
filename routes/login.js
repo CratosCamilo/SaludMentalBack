@@ -8,20 +8,18 @@ router.post("/", async function (req, res, next) {
   const { username, password } = req.body;
 
   try {
-    let user = new User();
-    const userExists = await user.usernameExists(username);
+    const userExists = await User.usernameExists(username);
 
     if (userExists) {
-      user = await User.findOne({ username: username });
+      // Cambiar a getUserByCC para obtener los detalles del usuario
+      const user = await User.getUserByCC(username); // Cambia username por CC
+      console.log("usuariop: " ,user);
 
-      const passwordCorrect = await user.isCorrectPassword(
-        password,
-        user.password
-      );
+      const passwordCorrect = await User.isCorrectPassword(username, password);
 
       if (passwordCorrect) {
-        const accessToken = user.createAccessToken();
-        const refreshToken = await user.createRefreshToken();
+        const accessToken = User.createAccessToken(user);
+        const refreshToken = await User.createRefreshToken(user);
 
         console.log({ accessToken, refreshToken });
 
@@ -31,10 +29,9 @@ router.post("/", async function (req, res, next) {
             refreshToken,
             user: getUserInfo(user),
           })
+          
         );
       } else {
-        //res.status(401).json({ error: "username and/or password incorrect" });
-
         return res.status(401).json(
           jsonResponse(401, {
             error: "username and/or password incorrect",
@@ -50,7 +47,13 @@ router.post("/", async function (req, res, next) {
     }
   } catch (err) {
     console.log(err);
+    return res.status(500).json(
+      jsonResponse(500, {
+        error: "Internal server error",
+      })
+    );
   }
 });
 
 module.exports = router;
+ 

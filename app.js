@@ -11,13 +11,12 @@ app.use(cors());
 
 const port = process.env.PORT || 3000;
 
-
 const config = {
   host: 'localhost',
-  user: 'usuario',
-  password: 'user34Aurea',
+  user: 'root',
+  password: '12345678',
   database: 'proyectointegrador1',
-  port:  3307
+  port:  3306
 };
 
 const pool = mysql.createPool(config);
@@ -34,7 +33,7 @@ async function main() {
 
 main().catch((err) => console.log(err));
 
-
+// Rutas
 app.use("/api/signup", require("./routes/signup"));
 app.use("/api/login", require("./routes/login"));
 app.use("/api/signout", require("./routes/logout"));
