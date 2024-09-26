@@ -13,7 +13,6 @@ router.post("/", async function (req, res, next) {
     if (userExists) {
       // Cambiar a getUserByCC para obtener los detalles del usuario
       const user = await User.getUserByCC(username); // Cambia username por CC
-      console.log("usuariop: " ,user);
 
       const passwordCorrect = await User.isCorrectPassword(username, password);
 
@@ -21,7 +20,6 @@ router.post("/", async function (req, res, next) {
         const accessToken = User.createAccessToken(user);
         const refreshToken = await User.createRefreshToken(user);
 
-        console.log({ accessToken, refreshToken });
 
         return res.json(
           jsonResponse(200, {

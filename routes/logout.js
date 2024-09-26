@@ -8,8 +8,6 @@ router.delete("/", async (req, res) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Esto extrae el token del encabezado
 
-    console.log("Token recibido para cerrar sesión:", token); // Log del token recibido
-
     if (!token) {
         return res.status(400).json({
             error: "Token is required for signout"

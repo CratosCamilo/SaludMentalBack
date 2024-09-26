@@ -18,6 +18,9 @@ function sign(payload, isAccessToken) {
 function generateAccessToken(user) {
   return sign({ user }, true);
 }
+function agenerateRefreshToken(user) {
+  return sign({ user }, false);
+}
 
 async function generateRefreshToken(user) {
   const refreshToken = sign({ user }, false);

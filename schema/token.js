@@ -22,7 +22,6 @@ const Token = {
         const sql = 'INSERT INTO Tokens (token) VALUES (?)';
         try {
             await query(sql, [token]);
-            console.log('Token saved:', token);
             return { success: true };
         } catch (error) {
             console.error('Error saving token:', error);

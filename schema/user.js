@@ -23,10 +23,8 @@ const query = (sql, values) => {
 const User = {
   async usernameExists(CC) {
     const sql = 'SELECT COUNT(*) AS count FROM ProyectoIntegrador1.USUARIOS WHERE CC = ?';
-    console.log(`Consulta SQL: ${sql} | Parámetro: ${CC}`);
     try {
       const result = await query(sql, [CC]);
-      console.log(`Resultado de la consulta: ${JSON.stringify(result)}`);
       return result[0].count > 0;
     } catch (error) {
       console.error(`Error ejecutando la consulta: ${error.message}`);

@@ -6,6 +6,7 @@ const { generateAccessToken } = require("../auth/sign");
 const getUserInfo = require("../lib/getUserInfo");
 const Token = require("../schema/token"); // Deberías tener un método para interactuar con la tabla de tokens
 const router = express.Router();
+const { query } = require("../lib/db"); 
 
 router.post("/", async function (req, res, next) {
     log.info("POST /api/refresh-token");
@@ -18,14 +19,13 @@ router.post("/", async function (req, res, next) {
 
     try {
         // Cambiar la búsqueda de Mongoose a una consulta SQL
-        const sql = 'SELECT * FROM tokens WHERE token = ?';
+        const sql = 'SELECT * FROM proyectointegrador1.tokens WHERE token = ?';
         const result = await query(sql, [refreshToken]);
-
         if (result.length === 0) {
             return res.status(403).json({ error: "Token de actualización inválido" });
         }
 
-        const payload = verifyRefreshToken(refreshToken);
+        const payload = await verifyRefreshToken(refreshToken);
         const accessToken = generateAccessToken(getUserInfo(payload.user));
         res.json(jsonResponse(200, { accessToken }));
     } catch (error) {

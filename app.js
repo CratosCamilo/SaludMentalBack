@@ -38,7 +38,6 @@ app.use("/api/signup", require("./routes/signup"));
 app.use("/api/login", require("./routes/login"));
 app.use("/api/signout", require("./routes/logout"));
 app.use("/api/refresh-token", require("./routes/refreshToken"));
-app.use("/api/posts", authenticateToken, require("./routes/posts"));
 app.use("/api/user", authenticateToken, require("./routes/user"));
 
 app.listen(port, () => {
