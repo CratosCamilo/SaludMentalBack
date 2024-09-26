@@ -1,6 +1,6 @@
 const express = require("express");
-const UserAdmin = require("../schema/user");
-const { jsonResponse } = require("../lib/jsonResponse");
+const { User, UserAdmin, UserDoctor, UserSecretary, Pacient } = require("../../schema/user");
+const { jsonResponse } = require("../../lib/jsonResponse");
 const router = express.Router();
 
 // Registrar Usuario
@@ -129,7 +129,7 @@ router.delete("/delete/:cedula", async function (req, res) {
             return res.status(404).json(jsonResponse(404, { error: "Usuario no encontrado" }));
         }
 
-        await UserAdmin.delete(cedula);
+        await UserAdmin.deleteByCC(cedula);
 
         const accion = "DELETE";
         const detalle = `Usuario con cédula ${cedula} eliminado satisfactoriamente.`;
@@ -147,8 +147,14 @@ router.delete("/delete/:cedula", async function (req, res) {
 // Seleccionar Usuario
 router.get("/select", async function (req, res) {
     try {
-        const users = await UserAdmin.find({});
-        return res.json(jsonResponse(200, { message: "Usuarios obtenidos satisfactoriamente", data: users }));
+        const users = await UserAdmin.findAll({});
+        //|| users.length === 0
+        if (!users ) {
+            return res.status(404).json(jsonResponse(404, { error: "Usuarios no encontrados" }));
+        }else{
+            return res.json(jsonResponse(200, { message: "Usuarios obtenidos satisfactoriamente", data: users }));
+        }
+        
     } catch (err) {
         console.error("Error interno del servidor:", err);
         res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));

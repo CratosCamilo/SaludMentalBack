@@ -20,20 +20,23 @@ const query = (sql, values) => {
 const Token = {
     async save(token) {
         const sql = 'INSERT INTO Tokens (token) VALUES (?)';
+
+        if (!token || typeof token !== 'string' || token.trim() === '') {
+            return { success: false, error: 'Invalid token value' };
+        }
+
         try {
-            await query(sql, [token]);
+            const result = await query(sql, [token]);
             return { success: true };
         } catch (error) {
-            console.error('Error saving token:', error);
             return { success: false, error: error.message };
         }
     },
     async deleteToken(token) {
-        const sql = 'DELETE FROM tokens WHERE token = ?'; // Ajusta según tu tabla de tokens
+        const sql = 'DELETE FROM tokens WHERE token = ?';
         return await query(sql, [token]);
     }
-
-
 };
+
 
 module.exports = Token;

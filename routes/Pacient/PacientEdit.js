@@ -1,5 +1,5 @@
 const express = require("express");
-const UserPacient = require("../schema/user");
+const { User, UserAdmin, UserDoctor, UserSecretary, Pacient }  = require("../schema/user");
 const { jsonResponse } = require("../lib/jsonResponse");
 const router = express.Router();
 
@@ -8,7 +8,7 @@ router.get("/", authenticatePatient, async function (req, res) {
     const { userCC } = req;
 
     try {
-        const user = await UserPacient.findUser(userCC);
+        const user = await Pacient.findUser(userCC);
         if (!user) {
             return res.status(404).json(jsonResponse(404, { error: "Usuario no encontrado" }));
         }

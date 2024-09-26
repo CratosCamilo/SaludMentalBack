@@ -1,5 +1,5 @@
 const express = require("express");
-const UserPacient = require("../schema/user");
+const { User, UserAdmin, UserDoctor, UserSecretary, Pacient }  = require("../schema/user");
 const { jsonResponse } = require("../lib/jsonResponse");
 const router = express.Router();
 

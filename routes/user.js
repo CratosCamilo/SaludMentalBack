@@ -6,7 +6,6 @@ const router = express.Router();
 router.get("/", async function (req, res, next) {
 
   res.json(jsonResponse(200, req.user));
-  console.log("hola", req.user)
 });
 
 module.exports = router;

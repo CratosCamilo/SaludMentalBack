@@ -1,5 +1,5 @@
 const express = require("express");
-const User = require("../schema/user");
+const { User, UserAdmin, UserDoctor, UserSecretary, Pacient } = require("../schema/user");
 const { jsonResponse } = require("../lib/jsonResponse");
 const getUserInfo = require("../lib/getUserInfo");
 const router = express.Router();
@@ -11,8 +11,7 @@ router.post("/", async function (req, res, next) {
     const userExists = await User.usernameExists(username);
 
     if (userExists) {
-      // Cambiar a getUserByCC para obtener los detalles del usuario
-      const user = await User.getUserByCC(username); // Cambia username por CC
+      const user = await User.getUserByCC(username); // 
 
       const passwordCorrect = await User.isCorrectPassword(username, password);
 

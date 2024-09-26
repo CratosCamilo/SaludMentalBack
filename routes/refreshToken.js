@@ -9,7 +9,7 @@ const router = express.Router();
 const { query } = require("../lib/db"); 
 
 router.post("/", async function (req, res, next) {
-    log.info("POST /api/refresh-token");
+    //log.info("POST /api/refresh-token");
     const refreshToken = req.body.refreshToken;
 
     if (!refreshToken) {

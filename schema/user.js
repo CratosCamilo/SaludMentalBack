@@ -105,7 +105,7 @@ const User = {
   },
 
   async createRefreshToken(user) {
-    const refreshToken = generateRefreshToken(user);
+    const refreshToken = await generateRefreshToken(user);
     try {
       await Token.save(refreshToken);
       return refreshToken;
@@ -602,4 +602,10 @@ const Pacient = {
 
 };
 
-module.exports = User;
+module.exports = {
+  User,
+  UserAdmin,
+  UserDoctor,
+  UserSecretary,
+  Pacient
+};
