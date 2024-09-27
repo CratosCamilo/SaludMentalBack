@@ -15,8 +15,7 @@ router.delete("/", async (req, res) => {
     }
 
     try {
-        const sql = 'DELETE FROM Tokens WHERE token = ?'; 
-        await query(sql, [token]);
+        await Token.deleteToken(token);
         return res.status(200).json({
             message: "User signed out successfully"
         });

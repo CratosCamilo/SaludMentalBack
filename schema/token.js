@@ -1,5 +1,6 @@
 const mysql = require('mysql2');
 
+
 const db = mysql.createPool({
     host: 'localhost',
     user: 'root',
@@ -33,8 +34,17 @@ const Token = {
         }
     },
     async deleteToken(token) {
-        const sql = 'DELETE FROM tokens WHERE token = ?';
-        return await query(sql, [token]);
+        if (!token) {
+            return { success: false, error: 'Invalid token value' };
+        }
+    
+        try {
+            const sql = 'DELETE FROM Tokens WHERE token = ?'; 
+            const result = await query(sql, [token]);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
     }
 };
 

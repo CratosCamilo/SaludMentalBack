@@ -4,7 +4,7 @@ const { verifyAccessToken } = require("./verify");
 
 function authenticateToken(req, res, next) {
   let token = null;
-  //log.info("headers", req.headers);
+  log.info("headers", req.headers);
   try {
     token = validateToken(req.headers);
     //    log.info("Token", token);

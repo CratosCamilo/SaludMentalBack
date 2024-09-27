@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const { query } = require("../lib/db"); // Asegúrate de tener la función `query` aquí o en otro lugar accesible.
 require("dotenv").config();
 
 function sign(payload, isAccessToken) {
@@ -18,16 +17,10 @@ function sign(payload, isAccessToken) {
 function generateAccessToken(user) {
   return sign({ user }, true);
 }
-function agenerateRefreshToken(user) {
+function generateRefreshToken(user) {
   return sign({ user }, false);
 }
 
-async function generateRefreshToken(user) {
-  const refreshToken = sign({ user }, false);
-  // Guarda el refreshToken en la base de datos
-  const sql = 'INSERT INTO Tokens (token) VALUES (?)'; // Ajusta según tu tabla
-  await query(sql, [refreshToken]);
-  return refreshToken;
-}
+
 
 module.exports = { generateAccessToken, generateRefreshToken };

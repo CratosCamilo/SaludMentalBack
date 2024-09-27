@@ -18,7 +18,6 @@ router.post("/", async function (req, res, next) {
     }
 
     try {
-        // Cambiar la búsqueda de Mongoose a una consulta SQL
         const sql = 'SELECT * FROM proyectointegrador1.tokens WHERE token = ?';
         const result = await query(sql, [refreshToken]);
         if (result.length === 0) {
