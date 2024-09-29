@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post("/", async function (req, res) {
     const { Identification, Names, Surnames, Email, Password, IdBranch, IdSpeciality, Address, CellphoneNumber, IdEps } = req.body;
-    console.log(req.body);
+    //console.log(req.body);
 
     // Validación de campos obligatorios
     if (!Identification || !Names || !Surnames || !Email || !Password || !Address || !CellphoneNumber || !IdEps) {
@@ -55,6 +55,7 @@ router.post("/", async function (req, res) {
                 IdRole: 4,  
                 UserStatus: 1,
                 IdSpeciality,
+                idHojaVida,
                 IdTypePatient: 1,
             });
 

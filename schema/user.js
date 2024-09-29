@@ -39,6 +39,13 @@ const User = {
     const hashedPassword = result[0].pwdUsuario;
     return bcrypt.compare(password, hashedPassword);
   },
+  async isCorrectPasswordNoEncrypt(CC, password) {
+    const sql = 'SELECT pwdUsuario FROM ProyectoIntegrador1.USUARIOS WHERE CC = ?';
+    const result = await query(sql, [CC]);
+    if (result.length === 0) return false;
+    const storedPassword = result[0].pwdUsuario;
+    return storedPassword === password;
+  },
 
   async getUserByCC(CC) {
     const sql = 'SELECT * FROM ProyectoIntegrador1.USUARIOS WHERE CC = ?';
@@ -49,7 +56,9 @@ const User = {
   async insertHojaVida(Address, userStatus, CellphoneNumber, IdEps) {
     try {
       const queryStr = `INSERT INTO HOJAS_VIDA (direccion, estadoUsuario, telefonoUsuario, idEps) VALUES (?, ?, ?, ?)`;
-      await query(queryStr, [Address, userStatus, CellphoneNumber, IdEps]);
+      const result = await query(queryStr, [Address, userStatus, CellphoneNumber, IdEps]);
+      const idHojaVida = result.insertId;
+      return idHojaVida;
     } catch (error) {
       console.error('Error inserting hoja de vida:', error);
       throw error;
@@ -71,14 +80,15 @@ const User = {
       userStatus,
       CellphoneNumber,
       IdEps,
+      idHojaVida,
       IdTypePatient
     } = userData;
 
     try {
       const hashedPassword = await bcrypt.hash(Password, 10);
       const userQuery = `
-        INSERT INTO USUARIOS (CC, nombreUsuario, apellidoUsuario, emailUsuario, pwdUsuario, idSede, idRol, estadoUsuario, idEspecialidad, idTipoPaciente)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO USUARIOS (CC, nombreUsuario, apellidoUsuario, emailUsuario, pwdUsuario, idSede, idRol, estadoUsuario, idEspecialidad, idHoja_Vida, idTipoPaciente)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       const userValues = [
         Identification,
@@ -90,6 +100,7 @@ const User = {
         IdRole,
         UserStatus,
         IdSpeciality,
+        idHojaVida,
         IdTypePatient
       ];
       await query(userQuery, userValues);
@@ -114,27 +125,95 @@ const User = {
       throw new Error('Error creating token');
     }
   }
-  
+
 };
 
 const UserAdmin = {
   //logs
   async logAction(usuario, accion, detalle) {
     try {
-        const queryStr = `
+      const queryStr = `
             INSERT INTO AUDITORIA (usuario, accion, detalle, fecha) 
             VALUES (?, ?, ?, NOW())
         `;
-        const result = await query(queryStr, [usuario, accion, detalle]);
-        return result;
+      const result = await query(queryStr, [usuario, accion, detalle]);
+      return result;
     } catch (error) {
-        console.error('Error al registrar la auditoría:', error);
-        throw error; // Lanza el error para que pueda ser manejado en otro lugar
+      console.error('Error al registrar la auditoría:', error);
+      throw error; // Lanza el error para que pueda ser manejado en otro lugar
     }
   },
 
   ////////////////////////////////////
   //users
+  async update(userData) {
+    const {
+      Identification,  // Se usa para identificar al usuario a actualizar
+      Names,
+      Surnames,
+      Email,
+      Password,  // Se hashea la contraseña antes de actualizar
+      IdRol,
+      IdTypePatient
+    } = userData;
+    try {
+      // Hashea la contraseña si se proporciona una nueva
+      const updatePass = await User.isCorrectPasswordNoEncrypt(Identification, Password);
+      if (!updatePass) {
+        const hashedPassword = await bcrypt.hash(Password, 10);
+        const updateQuery = `
+        UPDATE USUARIOS 
+        SET nombreUsuario = ?, 
+            apellidoUsuario = ?, 
+            emailUsuario = ?, 
+            pwdUsuario = ?, 
+            idRol = ?,  
+            idTipoPaciente = ?
+        WHERE CC = ?
+      `;
+
+        const updateValues = [
+          Names,
+          Surnames,
+          Email,
+          hashedPassword,
+          IdRol,
+          IdTypePatient,
+          Identification
+        ];
+        await query(updateQuery, updateValues);
+
+        return { success: true };
+      } else {
+        const updateQuery = `
+        UPDATE USUARIOS 
+        SET nombreUsuario = ?, 
+            apellidoUsuario = ?, 
+            emailUsuario = ?, 
+            pwdUsuario = ?, 
+            idRol = ?,  
+            idTipoPaciente = ?
+        WHERE CC = ?
+      `;
+        const updateValues = [
+          Names,
+          Surnames,
+          Email,
+          Password,
+          IdRol,
+          IdTypePatient,
+          Identification
+        ];
+        await query(updateQuery, updateValues);
+
+        return { success: true };
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
   async findAll() {
     try {
       const queryStr = `SELECT * FROM USUARIOS`;
@@ -157,25 +236,33 @@ const UserAdmin = {
     }
   },
 
-  async deleteByCC(Cedula) {
+  async toggleUserStatusByCC(CC) {
     try {
-        const queryStr = `DELETE FROM USUARIOS WHERE CC = ?`;
-        const result = await query(queryStr, [cc]);
-
-        if (result.affectedRows === 0) {
-            throw new Error('No se pudo eliminar el usuario, CC no encontrado.');
-        }
-
-        return result;
+      const queryStrSelect = `SELECT estadoUsuario FROM USUARIOS WHERE CC = ?`;
+      const resultSelect = await query(queryStrSelect, [CC]);
+      if (resultSelect.length === 0) {
+        throw new Error('Usuario no encontrado.');
+      }
+      const currentStatus = resultSelect[0].estadoUsuario;
+      const newStatus = currentStatus === 1 ? 0 : 1;
+      const queryStrUpdate = `UPDATE USUARIOS SET estadoUsuario = ? WHERE CC = ?`;
+      const resultUpdate = await query(queryStrUpdate, [newStatus, CC]);
+  
+      if (resultUpdate.affectedRows === 0) {
+        throw new Error('No se pudo actualizar el estado del usuario.');
+      }
+  
+      return { success: true, newStatus };
     } catch (error) {
-        console.error('Error al eliminar el usuario:', error);
-        throw error;
+      console.error('Error al cambiar el estado del usuario:', error);
+      throw error;
     }
   },
+  
 
   async save(user) {
     try {
-        const queryStr = `
+      const queryStr = `
             UPDATE USUARIOS 
             SET 
                 nombreUsuario = ?, 
@@ -191,28 +278,28 @@ const UserAdmin = {
             WHERE CC = ?
         `;
 
-        const result = await query(queryStr, [
-            user.nombreUsuario,
-            user.apellidoUsuario,
-            user.emailUsuario,
-            user.pwdUsuario,
-            user.idSede,
-            user.idRol,
-            user.estadoUsuario,
-            user.idEspecialidad,
-            user.idHoja_Vida,
-            user.idTipoPaciente,
-            user.CC
-        ]);
+      const result = await query(queryStr, [
+        user.nombreUsuario,
+        user.apellidoUsuario,
+        user.emailUsuario,
+        user.pwdUsuario,
+        user.idSede,
+        user.idRol,
+        user.estadoUsuario,
+        user.idEspecialidad,
+        user.idHoja_Vida,
+        user.idTipoPaciente,
+        user.CC
+      ]);
 
-        if (result.affectedRows === 0) {
-            throw new Error('No se pudo actualizar el usuario, CC no encontrado.');
-        }
+      if (result.affectedRows === 0) {
+        throw new Error('No se pudo actualizar el usuario, CC no encontrado.');
+      }
 
-        return result;
+      return result;
     } catch (error) {
-        console.error('Error al actualizar el usuario:', error);
-        throw error;
+      console.error('Error al actualizar el usuario:', error);
+      throw error;
     }
   },
 
@@ -246,7 +333,7 @@ const UserAdmin = {
 
     try {
       const hashedPassword = await bcrypt.hash(Password, 10);
-      
+
       const userQuery = `
         INSERT INTO USUARIOS (CC, nombreUsuario, apellidoUsuario, emailUsuario, pwdUsuario, idSede, idRol, estadoUsuario, idEspecialidad, idTipoPaciente)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -278,7 +365,7 @@ const UserAdmin = {
   //citas
   async findCitas(filter = {}) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT 
                 idCita, 
                 dia, 
@@ -292,32 +379,32 @@ const UserAdmin = {
             WHERE 1=1
         `;
 
-        const queryParams = [];
+      const queryParams = [];
 
-        // Aplicar filtros si existen
-        if (filter.idCita) {
-            queryStr += " AND idCita = ?";
-            queryParams.push(filter.idCita);
-        }
-        if (filter.dia) {
-            queryStr += " AND dia = ?";
-            queryParams.push(filter.dia);
-        }
-        if (filter.idUsuarioCC) {
-            queryStr += " AND idUsuarioCC = ?";
-            queryParams.push(filter.idUsuarioCC);
-        }
-        if (filter.idDocCC) {
-            queryStr += " AND idDocCC = ?";
-            queryParams.push(filter.idDocCC);
-        }
+      // Aplicar filtros si existen
+      if (filter.idCita) {
+        queryStr += " AND idCita = ?";
+        queryParams.push(filter.idCita);
+      }
+      if (filter.dia) {
+        queryStr += " AND dia = ?";
+        queryParams.push(filter.dia);
+      }
+      if (filter.idUsuarioCC) {
+        queryStr += " AND idUsuarioCC = ?";
+        queryParams.push(filter.idUsuarioCC);
+      }
+      if (filter.idDocCC) {
+        queryStr += " AND idDocCC = ?";
+        queryParams.push(filter.idDocCC);
+      }
 
-        const result = await query(queryStr, queryParams);
+      const result = await query(queryStr, queryParams);
 
-        return result;
+      return result;
     } catch (error) {
-        console.error('Error al buscar citas:', error);
-        throw error;
+      console.error('Error al buscar citas:', error);
+      throw error;
     }
   }
 
@@ -328,7 +415,7 @@ const UserDoctor = {
   // encontrar citas
   async findCitas(DoctorCC) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT 
                 c.idCita, 
                 c.dia, 
@@ -375,11 +462,11 @@ const UserDoctor = {
             WHERE idDocCC = ?
         `;
 
-        const result = await query(queryStr, [DoctorCC]);
-        return result;
+      const result = await query(queryStr, [DoctorCC]);
+      return result;
     } catch (error) {
-        console.error('Error al buscar citas:', error);
-        throw error;
+      console.error('Error al buscar citas:', error);
+      throw error;
     }
   },
 
@@ -415,7 +502,7 @@ const UserSecretary = {
   //Encontrar citas
   async findCitas(filter = {}) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT 
                 idCita, 
                 dia, 
@@ -429,32 +516,32 @@ const UserSecretary = {
             WHERE 1=1
         `;
 
-        const queryParams = [];
+      const queryParams = [];
 
-        // Aplicar filtros si existen
-        if (filter.idCita) {
-            queryStr += " AND idCita = ?";
-            queryParams.push(filter.idCita);
-        }
-        if (filter.dia) {
-            queryStr += " AND dia = ?";
-            queryParams.push(filter.dia);
-        }
-        if (filter.idUsuarioCC) {
-            queryStr += " AND idUsuarioCC = ?";
-            queryParams.push(filter.idUsuarioCC);
-        }
-        if (filter.idDocCC) {
-            queryStr += " AND idDocCC = ?";
-            queryParams.push(filter.idDocCC);
-        }
+      // Aplicar filtros si existen
+      if (filter.idCita) {
+        queryStr += " AND idCita = ?";
+        queryParams.push(filter.idCita);
+      }
+      if (filter.dia) {
+        queryStr += " AND dia = ?";
+        queryParams.push(filter.dia);
+      }
+      if (filter.idUsuarioCC) {
+        queryStr += " AND idUsuarioCC = ?";
+        queryParams.push(filter.idUsuarioCC);
+      }
+      if (filter.idDocCC) {
+        queryStr += " AND idDocCC = ?";
+        queryParams.push(filter.idDocCC);
+      }
 
-        const result = await query(queryStr, queryParams);
+      const result = await query(queryStr, queryParams);
 
-        return result;
+      return result;
     } catch (error) {
-        console.error('Error al buscar citas:', error);
-        throw error;
+      console.error('Error al buscar citas:', error);
+      throw error;
     }
   },
 
@@ -511,23 +598,23 @@ const Pacient = {
 
   async deleteById(CitaId) {
     try {
-        const queryStr = `DELETE FROM CITAS WHERE idCita = ?`;
-        const result = await query(queryStr, [CitaId]);
+      const queryStr = `DELETE FROM CITAS WHERE idCita = ?`;
+      const result = await query(queryStr, [CitaId]);
 
-        if (result.affectedRows === 0) {
-            throw new Error('No se pudo eliminar la cita, Id no encontrado.');
-        }
+      if (result.affectedRows === 0) {
+        throw new Error('No se pudo eliminar la cita, Id no encontrado.');
+      }
 
-        return result;
+      return result;
     } catch (error) {
-        console.error('Error al eliminar la cita:', error);
-        throw error;
+      console.error('Error al eliminar la cita:', error);
+      throw error;
     }
   },
 
   async findCitas(UserCC) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT 
                 idCita, 
                 dia, 
@@ -541,11 +628,11 @@ const Pacient = {
             WHERE idUsuarioCC = ?
         `;
 
-        const result = await query(queryStr, [UserCC]);
-        return result;
+      const result = await query(queryStr, [UserCC]);
+      return result;
     } catch (error) {
-        console.error('Error al buscar citas:', error);
-        throw error;
+      console.error('Error al buscar citas:', error);
+      throw error;
     }
   },
 
@@ -567,7 +654,7 @@ const Pacient = {
   //Historial pagos
   async findPagos(UserCC) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT 
                 a.idFactura_Electronica,
                 a.idCita,
@@ -580,11 +667,11 @@ const Pacient = {
             WHERE b.idUsuarioCC = ?
         `;
 
-        const result = await query(queryStr, [UserCC]);
-        return result;
+      const result = await query(queryStr, [UserCC]);
+      return result;
     } catch (error) {
-        console.error('Error al buscar historial:', error);
-        throw error;
+      console.error('Error al buscar historial:', error);
+      throw error;
     }
   },
 
@@ -592,7 +679,7 @@ const Pacient = {
   //Actualizar datos personales
   async userUpdate(userCC, user) {
     try {
-        const queryStr = `
+      const queryStr = `
             UPDATE USUARIOS u
             JOIN hojadevida h ON u.idHoja_Vida = h.idHoja_Vida
             SET 
@@ -604,23 +691,23 @@ const Pacient = {
             WHERE u.CC = ?
         `;
 
-        const result = await query(queryStr, [
-            user.emailUsuario,
-            user.pwdUsuario,
-            user.direccion,
-            user.telefonoUsuario,
-            user.idEps,
-            userCC
-        ]);
+      const result = await query(queryStr, [
+        user.emailUsuario,
+        user.pwdUsuario,
+        user.direccion,
+        user.telefonoUsuario,
+        user.idEps,
+        userCC
+      ]);
 
-        if (result.affectedRows === 0) {
-            throw new Error('No se pudo actualizar el usuario, CC no encontrado.');
-        }
+      if (result.affectedRows === 0) {
+        throw new Error('No se pudo actualizar el usuario, CC no encontrado.');
+      }
 
-        return result;
+      return result;
     } catch (error) {
-        console.error('Error al actualizar el usuario:', error);
-        throw error;
+      console.error('Error al actualizar el usuario:', error);
+      throw error;
     }
   },
 
@@ -628,7 +715,7 @@ const Pacient = {
   //Facturas pendientes
   async findFacturas(UserCC) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT 
                 a.idFactura_Electronica,
                 a.idCita,
@@ -641,11 +728,11 @@ const Pacient = {
             WHERE b.idUsuarioCC = ? and a.estadoFE = 1
         `;
 
-        const result = await query(queryStr, [UserCC]);
-        return result;
+      const result = await query(queryStr, [UserCC]);
+      return result;
     } catch (error) {
-        console.error('Error al buscar facturas pendientes:', error);
-        throw error;
+      console.error('Error al buscar facturas pendientes:', error);
+      throw error;
     }
   },
 
