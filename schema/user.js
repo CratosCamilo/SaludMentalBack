@@ -738,7 +738,6 @@ const Pacient = {
 
 };
 
-<<<<<<< Updated upstream
 module.exports = {
   User,
   UserAdmin,
@@ -746,10 +745,3 @@ module.exports = {
   UserSecretary,
   Pacient
 };
-=======
-module.exports = User;
-module.exports = UserAdmin;
-module.exports = UserDoctor;
-module.exports = UserSecretary;
-module.exports = Pacient;
->>>>>>> Stashed changes
