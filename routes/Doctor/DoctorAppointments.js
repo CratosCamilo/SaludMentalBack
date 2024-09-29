@@ -4,7 +4,7 @@ const { jsonResponse } = require("../lib/jsonResponse");
 const router = express.Router();
 
 // confirma una cita
-router.put("/doctor/confirm/:idCita", async function (req, res) {
+router.put("/doctor/modificarCita/:idCita", async function (req, res) {
     const { idCita, idDocCC } = req.params;
     const { estadoCita } = req.body; // EstadoCita = 0 para confirmar, 1 para cancelar
 
@@ -45,6 +45,40 @@ router.get("/doctor/citas/:idDocCC", async function (req, res) {
     }
 });
 
+router.get("/doctor/cantUserT/:idDocCC", async function (req, res) {
+    const { idDocCC } = req.params;
 
+    try {
+        const citas = await UserDoctor.findConsultas({ idDocCC });
+        return res.json(jsonResponse(200, { message: "Cantidad de usuarios obtenidos satisfactoriamente", data: citas }));
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
+
+router.get("/doctor/cantCitasH/:idDocCC", async function (req, res) {
+    const { idDocCC } = req.params;
+
+    try {
+        const citas = await UserDoctor.findCitasDia({ idDocCC });
+        return res.json(jsonResponse(200, { message: "Cantidad de citas obtenidas satisfactoriamente", data: citas }));
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
+
+router.get("/doctor/cantCitasT/:idDocCC", async function (req, res) {
+    const { idDocCC } = req.params;
+
+    try {
+        const citas = await UserDoctor.findCitasT({ idDocCC });
+        return res.json(jsonResponse(200, { message: "Cantidad de consultas obtenidas satisfactoriamente", data: citas }));
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
 
 module.exports = router;
