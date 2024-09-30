@@ -11,7 +11,16 @@ router.post("/", async function (req, res, next) {
     const userExists = await User.usernameExists(username);
 
     if (userExists) {
-      const user = await User.getUserByCC(username); // 
+      const user = await User.getUserByCC(username);
+
+      // Validar si el usuario está activo
+      if (user.estadoUsuario !== 1) {
+        return res.status(403).json(
+          jsonResponse(403, {
+            error: "El usuario está inactivo, no puede iniciar sesión",
+          })
+        );
+      }
 
       const passwordCorrect = await User.isCorrectPassword(username, password);
 
@@ -19,26 +28,24 @@ router.post("/", async function (req, res, next) {
         const accessToken = User.createAccessToken(user);
         const refreshToken = await User.createRefreshToken(user);
 
-
         return res.json(
           jsonResponse(200, {
             accessToken,
             refreshToken,
             user: getUserInfo(user),
           })
-          
         );
       } else {
         return res.status(401).json(
           jsonResponse(401, {
-            error: "username and/or password incorrect",
+            error: "Nombre de usuario y/o contraseña incorrectos",
           })
         );
       }
     } else {
       return res.status(401).json(
         jsonResponse(401, {
-          error: "username does not exist",
+          error: "El nombre de usuario no existe",
         })
       );
     }
@@ -46,11 +53,10 @@ router.post("/", async function (req, res, next) {
     console.log(err);
     return res.status(500).json(
       jsonResponse(500, {
-        error: "Internal server error",
+        error: "Error interno del servidor",
       })
     );
   }
 });
 
 module.exports = router;
- 
