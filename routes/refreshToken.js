@@ -18,7 +18,7 @@ router.post("/", async function (req, res, next) {
     }
 
     try {
-        const sql = 'SELECT * FROM proyectointegrador1.tokens WHERE token = ?';
+        const sql = 'SELECT * FROM Tokens WHERE token = ?';
         const result = await query(sql, [refreshToken]);
         if (result.length === 0) {
             return res.status(403).json({ error: "Token de actualización inválido" });

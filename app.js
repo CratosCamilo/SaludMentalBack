@@ -12,11 +12,11 @@ app.use(cors());
 const port = process.env.PORT || 3000;
 
 const config = {
-  host: 'localhost',
-  user: 'root',
-  password: '12345678',
-  database: 'proyectointegrador1',
-  port:  3306
+  host: process.env.DB_HOST ,
+  user: process.env.DB_USER ,
+  password: process.env.DB_PASSWORD ,
+  database: process.env.DB_NAME ,
+  port: process.env.DB_PORT
 };
 
 const pool = mysql.createPool(config);

@@ -2,11 +2,11 @@ const mysql = require('mysql2');
 
 
 const db = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '12345678',
-    database: 'ProyectoIntegrador1',
-    port: 3306
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
 });
 
 const query = (sql, values) => {
@@ -37,9 +37,9 @@ const Token = {
         if (!token) {
             return { success: false, error: 'Invalid token value' };
         }
-    
+
         try {
-            const sql = 'DELETE FROM Tokens WHERE token = ?'; 
+            const sql = 'DELETE FROM Tokens WHERE token = ?';
             const result = await query(sql, [token]);
             return { success: true };
         } catch (error) {

@@ -4,11 +4,11 @@ const { generateAccessToken, generateRefreshToken } = require('../auth/sign');
 const Token = require('../schema/token');
 
 const db = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '12345678',
-  database: 'ProyectoIntegrador1',
-  port: 3306
+  host: process.env.DB_HOST ,
+  user: process.env.DB_USER ,
+  password: process.env.DB_PASSWORD ,
+  database: process.env.DB_NAME ,
+  port: process.env.DB_PORT
 });
 
 const query = (sql, values) => {
@@ -22,7 +22,7 @@ const query = (sql, values) => {
 
 const User = {
   async usernameExists(CC) {
-    const sql = 'SELECT COUNT(*) AS count FROM ProyectoIntegrador1.USUARIOS WHERE CC = ?';
+    const sql = 'SELECT COUNT(*) AS count FROM USUARIOS WHERE CC = ?';
     try {
       const result = await query(sql, [CC]);
       return result[0].count > 0;
@@ -33,14 +33,14 @@ const User = {
   },
 
   async isCorrectPassword(CC, password) {
-    const sql = 'SELECT pwdUsuario FROM ProyectoIntegrador1.USUARIOS WHERE CC = ?';
+    const sql = 'SELECT pwdUsuario FROM USUARIOS WHERE CC = ?';
     const result = await query(sql, [CC]);
     if (result.length === 0) return false;
     const hashedPassword = result[0].pwdUsuario;
     return bcrypt.compare(password, hashedPassword);
   },
   async isCorrectPasswordNoEncrypt(CC, password) {
-    const sql = 'SELECT pwdUsuario FROM ProyectoIntegrador1.USUARIOS WHERE CC = ?';
+    const sql = 'SELECT pwdUsuario FROM USUARIOS WHERE CC = ?';
     const result = await query(sql, [CC]);
     if (result.length === 0) return false;
     const storedPassword = result[0].pwdUsuario;
@@ -48,7 +48,7 @@ const User = {
   },
 
   async getUserByCC(CC) {
-    const sql = 'SELECT * FROM ProyectoIntegrador1.USUARIOS WHERE CC = ?';
+    const sql = 'SELECT * FROM USUARIOS WHERE CC = ?';
     const result = await query(sql, [CC]);
     return result[0]; // Devuelve el primer usuario encontrado
   },
