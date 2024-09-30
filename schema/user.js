@@ -417,14 +417,47 @@ const UserDoctor = {
     try {
       const queryStr = `
             SELECT 
-                idCita, 
-                dia, 
-                hora, 
-                estadoCita, 
-                idServicio, 
-                idHistoria_Medica, 
-                idUsuarioCC, 
-                idDocCC 
+                c.idCita, 
+                c.dia, 
+                c.hora, 
+                c.estadoCita, 
+                s.nombreServicio,  -- Traer el nombre del servicio
+                c.idHistoria_Medica, 
+                c.idUsuarioCC, 
+                c.idDocCC
+            FROM CITAS c
+            JOIN SERVICIOS s ON c.idServicio = s.idServicio
+            WHERE c.idDocCC = ?;
+        `;
+
+        const result = await query(queryStr, [DoctorCC]);
+        return result;
+    } catch (error) {
+        console.error('Error al buscar citas:', error);
+        throw error;
+    }
+  },
+
+  async findCitasDia(DoctorCC) {
+    try {
+        const queryStr = `
+            SELECT COUNT(idCita)
+            FROM CITAS
+            WHERE idDocCC = ? and DATE(Dia) = CURDATE();
+        `;
+
+        const result = await query(queryStr, [DoctorCC]);
+        return result;
+    } catch (error) {
+        console.error('Error al buscar citas:', error);
+        throw error;
+    }
+  },
+
+  async findCitasT(DoctorCC) {
+    try {
+        const queryStr = `
+            SELECT COUNT(idCita)
             FROM CITAS
             WHERE idDocCC = ?
         `;
@@ -434,6 +467,22 @@ const UserDoctor = {
     } catch (error) {
       console.error('Error al buscar citas:', error);
       throw error;
+    }
+  },
+
+  async findConsultas(DoctorCC) {
+    try {
+        const queryStr = `
+            SELECT COUNT(DISTINCT idUsuarioCC) AS conteoPacientes
+            FROM CITAS
+            WHERE idDocCC = ?;
+        `;
+
+        const result = await query(queryStr, [DoctorCC]);
+        return result;
+    } catch (error) {
+        console.error('Error al buscar consultas:', error);
+        throw error;
     }
   },
 
