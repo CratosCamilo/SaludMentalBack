@@ -1,7 +1,7 @@
 const express = require("express");
-const UserSecretary = require("../schema/user");
-const { jsonResponse } = require("../lib/jsonResponse");
+const { jsonResponse } = require("../../lib/jsonResponse");
 const router = express.Router();
+const { User, UserAdmin, UserDoctor, UserSecretary, Pacient }  = require("../../schema/user");
 
 // confirma una cita
 router.put("/doctor/modificarCita/:idCita", async function (req, res) {
@@ -33,11 +33,11 @@ router.put("/doctor/modificarCita/:idCita", async function (req, res) {
 });
 
 // Obtener todas las citas
-router.get("/doctor/citas/:idDocCC", async function (req, res) {
-    const { idDocCC } = req.params;
+router.get("/citas/:CC", async function (req, res) {
+    const { CC } = req.params;
 
     try {
-        const citas = await UserDoctor.findCitas({ idDocCC });
+        const citas = await UserDoctor.findCitas(CC);
         return res.json(jsonResponse(200, { message: "Citas obtenidas satisfactoriamente", data: citas }));
     } catch (err) {
         console.error("Error interno del servidor:", err);

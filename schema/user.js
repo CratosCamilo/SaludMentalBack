@@ -413,24 +413,30 @@ const UserAdmin = {
 
 const UserDoctor = {
   // encontrar citas
-  async findCitas(DoctorCC) {
+  async findCitas(CC) {
     try {
       const queryStr = `
             SELECT 
-                c.idCita, 
-                c.dia, 
-                c.hora, 
-                c.estadoCita, 
-                s.nombreServicio,  -- Traer el nombre del servicio
-                c.idHistoria_Medica, 
-                c.idUsuarioCC, 
-                c.idDocCC
-            FROM CITAS c
-            JOIN SERVICIOS s ON c.idServicio = s.idServicio
-            WHERE c.idDocCC = ?;
-        `;
+              C.idCita,
+              C.dia,
+              C.hora,
+              C.estadoCita,
+              S.nombreServicio,
+              D.nombreUsuario AS nombrePaciente,
+              D.apellidoUsuario AS apellidoPaciente
+            FROM 
+              CITAS C
+            INNER JOIN 
+              USUARIOS D ON C.idUsuarioCC = D.CC
+            INNER JOIN 
+              SERVICIOS S ON C.idServicio = S.idServicio
+            WHERE 
+              C.idDocCC = ?
+            ORDER BY 
+              C.dia ASC;
+              `;
 
-      const result = await query(queryStr, [DoctorCC]);
+      const result = await query(queryStr, [CC]);
       return result;
     } catch (error) {
       console.error('Error al buscar citas:', error);
@@ -627,6 +633,8 @@ const Pacient = {
               SERVICIOS S ON C.idServicio = S.idServicio
             WHERE 
               C.idUsuarioCC = ?
+            ORDER BY 
+              C.dia ASC;
               `;
 
       const result = await query(queryStr, [UserCC]);
@@ -636,6 +644,7 @@ const Pacient = {
       throw error;
     }
   },
+  
 
   async findCitaId(idCita) {
     try {
