@@ -4,10 +4,10 @@ const { generateAccessToken, generateRefreshToken } = require('../auth/sign');
 const Token = require('../schema/token');
 
 const db = mysql.createPool({
-  host: process.env.DB_HOST ,
-  user: process.env.DB_USER ,
-  password: process.env.DB_PASSWORD ,
-  database: process.env.DB_NAME ,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   port: process.env.DB_PORT
 });
 
@@ -247,18 +247,18 @@ const UserAdmin = {
       const newStatus = currentStatus === 1 ? 0 : 1;
       const queryStrUpdate = `UPDATE USUARIOS SET estadoUsuario = ? WHERE CC = ?`;
       const resultUpdate = await query(queryStrUpdate, [newStatus, CC]);
-  
+
       if (resultUpdate.affectedRows === 0) {
         throw new Error('No se pudo actualizar el estado del usuario.');
       }
-  
+
       return { success: true, newStatus };
     } catch (error) {
       console.error('Error al cambiar el estado del usuario:', error);
       throw error;
     }
   },
-  
+
 
   async save(user) {
     try {
@@ -430,33 +430,33 @@ const UserDoctor = {
             WHERE c.idDocCC = ?;
         `;
 
-        const result = await query(queryStr, [DoctorCC]);
-        return result;
+      const result = await query(queryStr, [DoctorCC]);
+      return result;
     } catch (error) {
-        console.error('Error al buscar citas:', error);
-        throw error;
+      console.error('Error al buscar citas:', error);
+      throw error;
     }
   },
 
   async findCitasDia(DoctorCC) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT COUNT(idCita)
             FROM CITAS
             WHERE idDocCC = ? and DATE(Dia) = CURDATE();
         `;
 
-        const result = await query(queryStr, [DoctorCC]);
-        return result;
+      const result = await query(queryStr, [DoctorCC]);
+      return result;
     } catch (error) {
-        console.error('Error al buscar citas:', error);
-        throw error;
+      console.error('Error al buscar citas:', error);
+      throw error;
     }
   },
 
   async findCitasT(DoctorCC) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT COUNT(idCita)
             FROM CITAS
             WHERE idDocCC = ?
@@ -472,17 +472,17 @@ const UserDoctor = {
 
   async findConsultas(DoctorCC) {
     try {
-        const queryStr = `
+      const queryStr = `
             SELECT COUNT(DISTINCT idUsuarioCC) AS conteoPacientes
             FROM CITAS
             WHERE idDocCC = ?;
         `;
 
-        const result = await query(queryStr, [DoctorCC]);
-        return result;
+      const result = await query(queryStr, [DoctorCC]);
+      return result;
     } catch (error) {
-        console.error('Error al buscar consultas:', error);
-        throw error;
+      console.error('Error al buscar consultas:', error);
+      throw error;
     }
   },
 
@@ -565,26 +565,22 @@ const Pacient = {
     const {
       dia,
       hora,
-      estadoCita,
       idServicio,
-      idHistoria_Medica,
-      idUsuarioCC,
-      idDocCC
+      idUser,
+      idDoctor
     } = citaData;
 
     try {
       const citaQuery = `
-        INSERT INTO CITAS (dia, hora, estadoCita, idServicio, idHistoria_Medica, idUsuarioCC, idDocCC)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO CITAS (dia, hora, idServicio, idUsuarioCC, idDocCC)
+        VALUES (?, ?, ?, ?, ?)
       `;
       const citaValues = [
         dia,
         hora,
-        estadoCita,
         idServicio,
-        idHistoria_Medica,
-        idUsuarioCC,
-        idDocCC
+        idUser,
+        idDoctor
       ];
       await query(citaQuery, citaValues);
 
@@ -646,6 +642,91 @@ const Pacient = {
       throw error;
     }
   },
+  // Nueva función para obtener las horas disponibles
+  async fetchAvailableTimes(dia, idDocCC) {
+    try {
+      const queryStr = `
+        WITH RECURSIVE available_hours AS (
+          SELECT '07:00:00' AS hora
+          UNION ALL
+          SELECT ADDTIME(hora, '00:30:00')
+          FROM available_hours
+          WHERE hora < '17:00:00'
+        )
+        SELECT hora
+        FROM available_hours
+        WHERE hora NOT IN (
+          SELECT hora 
+          FROM CITAS 
+          WHERE dia = ? AND idDocCC = ?
+        )
+      `;
+
+      const result = await query(queryStr, [dia, idDocCC]);
+      return result.map(hour => hour.hora);
+    } catch (error) {
+      console.error('Error al obtener horas disponibles:', error);
+      throw error;
+    }
+  },
+  async fetchDoctors() {
+    try {
+      const queryStr = `
+        SELECT CC, nombreUsuario AS nombre, apellidoUsuario AS apellido, idEspecialidad
+        FROM USUARIOS
+        WHERE idRol = 3 AND estadoUsuario = 1; 
+      `;
+
+      // Ejecuta la consulta para obtener los doctores
+      const result = await query(queryStr);
+
+      // Retorna los resultados en un formato adecuado
+      return result.map(doctor => ({
+        CC: doctor.CC,
+        nombre: doctor.nombre,
+        apellido: doctor.apellido,
+        idEspecialidad: doctor.idEspecialidad
+      }));
+    } catch (error) {
+      console.error('Error al obtener la lista de doctores:', error);
+      throw error;
+    }
+  },
+  async fetchServices() {
+    try {
+      const queryStr = `
+        select * from SERVICIOS WHERE idEspecialidad = 11 or idEspecialidad = 12 or idEspecialidad = 13 or idEspecialidad = 14;
+      `;
+      const result = await query(queryStr);
+      return result.map(servicio => ({
+        idServicio: servicio.idServicio,
+        nombreServicio: servicio.nombreServicio,
+        precioServicio: servicio.precioServicio,
+        idEspecialidad: servicio.idEspecialidad
+      }));
+    } catch (error) {
+      console.error('Error al obtener la lista de servicios:', error);
+      throw error;
+    }
+  },
+
+  // Nueva función para obtener citas de un doctor en un día específico
+  async getDoctorCitas(dia, idDocCC) {
+    try {
+      const queryStr = `
+        SELECT hora 
+        FROM CITAS 
+        WHERE dia = ? AND idDocCC = ?
+      `;
+
+      const result = await query(queryStr, [dia, idDocCC]);
+      return result.map(cita => cita.hora);
+    } catch (error) {
+      console.error('Error al obtener citas del doctor:', error);
+      throw error;
+    }
+  },
+
 
   ////////////////////////////////////////////
   //Historia medica
