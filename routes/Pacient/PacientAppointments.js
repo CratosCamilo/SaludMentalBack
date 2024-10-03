@@ -137,7 +137,7 @@ router.get("/citas/:idUser", async function (req, res) {
     const { idUser } = req.params;
 
     try {
-        const citas = await UserPacient.findCitas(idUser);
+        const citas = await Pacient.findCitas(idUser);
         return res.json(jsonResponse(200, { message: "Citas obtenidas satisfactoriamente", data: citas }));
     } catch (err) {
         console.error("Error interno del servidor:", err);

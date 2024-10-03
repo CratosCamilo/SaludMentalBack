@@ -612,17 +612,22 @@ const Pacient = {
     try {
       const queryStr = `
             SELECT 
-                idCita, 
-                dia, 
-                hora, 
-                estadoCita, 
-                idServicio, 
-                idHistoria_Medica, 
-                idUsuarioCC, 
-                idDocCC 
-            FROM CITAS
-            WHERE idUsuarioCC = ?
-        `;
+              C.idCita,
+              C.dia,
+              C.hora,
+              C.estadoCita,
+              S.nombreServicio,
+              D.nombreUsuario AS nombreDoctor,
+              D.apellidoUsuario AS apellidoDoctor
+            FROM 
+              CITAS C
+            INNER JOIN 
+              USUARIOS D ON C.idDocCC = D.CC
+            INNER JOIN 
+              SERVICIOS S ON C.idServicio = S.idServicio
+            WHERE 
+              C.idUsuarioCC = ?
+              `;
 
       const result = await query(queryStr, [UserCC]);
       return result;
