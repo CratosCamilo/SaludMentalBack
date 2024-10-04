@@ -561,6 +561,16 @@ const UserSecretary = {
       throw error;
     }
   },
+  async findAll() {
+    try {
+      const queryStr = `SELECT * FROM USUARIOS  where idRol = 4`;
+      const result = await query(queryStr);
+      return result;
+    } catch (error) {
+      console.error('Error fetching all usuarios:', error);
+      throw error;
+    }
+  },
 
 };
 

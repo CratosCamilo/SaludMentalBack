@@ -41,6 +41,7 @@ app.use("/api/refresh-token", require("./routes/refreshToken"));
 app.use("/api/Admin", authenticateToken, require("./routes/Admin/insertUser"));
 app.use("/api/Pacient", authenticateToken, require("./routes/Pacient/PacientAppointments"));
 app.use("/api/Doctor", authenticateToken, require("./routes/Doctor/DoctorAppointments"));
+app.use("/api/Secretary", authenticateToken, require("./routes/Secretary/SecretaryUsers"));
 app.use("/api/user", authenticateToken, require("./routes/user"));
 
 

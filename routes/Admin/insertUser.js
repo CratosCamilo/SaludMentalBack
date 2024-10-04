@@ -77,7 +77,7 @@ router.put("/edit/:CC", async function (req, res) {
     const { Identification, Names, Surnames, Email, Password, IdRol, IdTypePatient } = req.body;
 
     // Validación de campos obligatorios
-    if (!Identification || !Names || !Surnames || !Email || !IdRol || !Password || !IdTypePatient) {
+    if (!Identification || !Names || !Surnames || !Email || !IdRol || !Password) {
         return res.status(400).json(jsonResponse(400, { error: "Todos los campos son obligatorios" }));
     }
 
