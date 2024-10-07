@@ -1,6 +1,5 @@
 const express = require("express");
-const UserSecretary = require("../schema/user");
-const UserAdmin = require("../schema/user");
+const { User, UserAdmin, UserDoctor, UserSecretary, Pacient } = require("../../schema/user");
 const { jsonResponse } = require("../lib/jsonResponse");
 const router = express.Router();
 
@@ -51,6 +50,16 @@ router.get("/secretary/select", async function (req, res) {
         if (idDocCC) filter.idDocCC = idDocCC;
 
         const citas = await UserSecretary.findCitas(filter);
+        return res.json(jsonResponse(200, { message: "Citas obtenidas satisfactoriamente", data: citas }));
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
+router.get("/citas", async function (req, res) {    
+
+    try {
+        const citas = await UserSecretary.findAllCitas();
         return res.json(jsonResponse(200, { message: "Citas obtenidas satisfactoriamente", data: citas }));
     } catch (err) {
         console.error("Error interno del servidor:", err);

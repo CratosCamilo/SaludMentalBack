@@ -506,6 +506,60 @@ const UserDoctor = {
 
 const UserSecretary = {
   //Encontrar citas
+  async toggleCitaStatusByidCita(idCita) {
+    try {
+      const queryStrSelect = `SELECT estadoCita FROM CITAS WHERE idCita = ?`;
+      const resultSelect = await query(queryStrSelect, [idCita]);
+      if (resultSelect.length === 0) {
+        throw new Error('Cita no encontrada.');
+      }
+      const currentStatus = resultSelect[0].estadoCita;
+      const newStatus = currentStatus === 1 ? 0 : 1;
+      const queryStrUpdate = `UPDATE CITAS SET estadoCita = ? WHERE idCita = ?`;
+      const resultUpdate = await query(queryStrUpdate, [newStatus, idCita]);
+
+      if (resultUpdate.affectedRows === 0) {
+        throw new Error('No se pudo actualizar el estado de la cita.');
+      }
+
+      return { success: true, newStatus };
+    } catch (error) {
+      console.error('Error al cambiar el estado de la cita:', error);
+      throw error;
+    }
+  },
+  async findAllCitas() {
+    try {
+      const queryStr = `
+            SELECT 
+              C.idCita,
+              C.dia,
+              C.hora,
+              C.estadoCita,
+              S.nombreServicio,
+              D.nombreUsuario AS nombreDoctor,
+              D.apellidoUsuario AS apellidoDoctor,
+              P.nombreUsuario AS nombrePaciente,
+              P.apellidoUsuario AS apellidoPaciente
+            FROM 
+              CITAS C
+            INNER JOIN 
+              USUARIOS D ON C.idDocCC = D.CC
+            INNER JOIN 
+              SERVICIOS S ON C.idServicio = S.idServicio            
+            INNER JOIN 
+              USUARIOS P ON C.idUsuarioCC = P.CC            
+            ORDER BY 
+              C.dia ASC;
+              `;
+
+      const result = await query(queryStr);
+      return result;
+    } catch (error) {
+      console.error('Error al buscar citas:', error);
+      throw error;
+    }
+  },
   async findCitas(filter = {}) {
     try {
       const queryStr = `
@@ -577,6 +631,49 @@ const UserSecretary = {
 const Pacient = {
   ///////////////////////////////////////////
   //citas
+  async findIdCita(idCita) {
+    try {
+      const queryStr = `SELECT * FROM CITAS WHERE idCita = ?`;
+      const result = await query(queryStr, [idCita]);
+      return result;
+    } catch (error) {
+      console.error('Error fetching CITA by idCita:', error);
+      throw error;
+    }
+  },
+
+  async update(userData) {
+    const {
+      dia,
+      hora,
+      idCita,
+    } = userData;
+    try {
+
+      const updateQuery = `
+        UPDATE CITAS 
+        SET dia = ?, 
+            hora = ?            
+        WHERE idCita = ?
+      `;
+
+      const updateValues = [
+        dia,
+        hora,
+        idCita,
+      ];
+      console.log(updateQuery, " ", updateValues)
+      await query(updateQuery, updateValues);
+      
+      return { success: true };
+
+
+    }
+    catch (error) {
+      console.error('Error updating appointment:', error);
+      return { success: false, error: error.message };
+    }
+  },
   async insertCita(citaData) {
     const {
       dia,
@@ -598,6 +695,7 @@ const Pacient = {
         idUser,
         idDoctor
       ];
+      
       await query(citaQuery, citaValues);
 
       return { success: true };
@@ -634,13 +732,17 @@ const Pacient = {
               C.estadoCita,
               S.nombreServicio,
               D.nombreUsuario AS nombreDoctor,
-              D.apellidoUsuario AS apellidoDoctor
+              D.apellidoUsuario AS apellidoDoctor,
+              P.nombreUsuario AS nombrePaciente,
+              P.apellidoUsuario AS apellidoPaciente
             FROM 
               CITAS C
             INNER JOIN 
               USUARIOS D ON C.idDocCC = D.CC
             INNER JOIN 
               SERVICIOS S ON C.idServicio = S.idServicio
+            INNER JOIN 
+              USUARIOS P ON C.idUsuarioCC = P.CC 
             WHERE 
               C.idUsuarioCC = ?
             ORDER BY 
@@ -654,15 +756,33 @@ const Pacient = {
       throw error;
     }
   },
-  
 
-  async findCitaId(idCita) {
+
+  async findCitaId(citaId) {
     try {
-      const queryStr = `SELECT * FROM CITAS WHERE idUsuarioCC = ?`;
-      const result = await query(queryStr, [idCita], [DoctorCC]);
+      const queryStr = `SELECT 
+            C.idUsuarioCC,
+            C.idCita,
+            C.dia,
+            C.hora,
+            C.estadoCita,
+            C.idServicio,
+            C.idDocCC,
+            S.nombreServicio,
+            D.nombreUsuario AS nombreDoctor,
+            D.apellidoUsuario AS apellidoDoctor
+        FROM 
+            CITAS C
+        INNER JOIN 
+            USUARIOS D ON C.idDocCC = D.CC
+        INNER JOIN 
+            SERVICIOS S ON C.idServicio = S.idServicio
+        WHERE 
+            C.idCita = ?`;
+      const result = await query(queryStr, [citaId]);
       return result;
     } catch (error) {
-      console.error('Error fetching citas by id:', error);
+      console.error('Error fetching citas by cedula:', error);
       throw error;
     }
   },
@@ -683,6 +803,7 @@ const Pacient = {
           SELECT hora 
           FROM CITAS 
           WHERE dia = ? AND idDocCC = ?
+          AND estadoCita = 1
         )
       `;
 

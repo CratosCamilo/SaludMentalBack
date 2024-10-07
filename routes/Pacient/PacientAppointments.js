@@ -32,27 +32,28 @@ router.post("/new", async function (req, res) {
 // Editar Cita
 router.put("/edit/:idCita", async function (req, res) {
     const { idCita } = req.params;
-    const { dia, hora, estadoCita, idServicio } = req.body;
-
-    
-    if (!dia || !hora || !estadoCita || !idServicio) {
-        return res.status(400).json(jsonResponse(400, { error: "Todos los campos son obligatorios" }));
-    }
-
+    const { dia, hora } = req.body;   
+        
     try {
-        const cita = await UserPacient.findById(idCita);
-        if (!cita) {
-            return res.status(404).json(jsonResponse(404, { error: "Cita no encontrada" }));
+        
+        const result = await Pacient.update({
+            dia,
+            hora,
+            idCita,
+        });
+        if (result && result.success) {
+            return res.json(
+                jsonResponse(200, {
+                    message: "Cita actualizada satisfactoriamente",
+                })
+            );
+        } else {
+            return res.status(500).json(
+                jsonResponse(500, {
+                    error: result?.error || "Error al actualizar cita",
+                })
+            );
         }
-
-        cita.dia = dia;
-        cita.hora = hora;
-        cita.estadoCita = estadoCita;
-        cita.idServicio = idServicio;
-
-        const result = await cita.save();
-
-        return res.json(jsonResponse(200, { message: "Cita actualizada satisfactoriamente", data: result }));
     } catch (err) {
         console.error("Error interno del servidor:", err);
         res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
@@ -145,4 +146,16 @@ router.get("/citas/:idUser", async function (req, res) {
     }
 });
 
+router.get("/fetch-cita/:idCita", async function (req, res) {
+    const { idCita } = req.params; // Obtiene la identificación desde los parámetros de la URL
+
+    try {               
+        const cita = await Pacient.findCitaId(idCita);
+        return res.json(jsonResponse(200, { message: "Cita obtenido satisfactoriamente", data: cita }));
+
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
 module.exports = router;

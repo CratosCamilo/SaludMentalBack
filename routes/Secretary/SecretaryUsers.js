@@ -142,7 +142,27 @@ router.put("/toggle-status/:cedula", async function (req, res) {
     }
 });
 
+router.get("/citas", async function (req, res) {    
 
+    try {
+        const citas = await UserSecretary.findAllCitas();
+        return res.json(jsonResponse(200, { message: "Citas obtenidas satisfactoriamente", data: citas }));
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
+
+router.put("/toggle-status-cita/:idCita", async function (req, res) {
+    const { idCita } = req.params
+    try {       
+        const result = await UserSecretary.toggleCitaStatusByidCita(idCita);
+        return res.json(jsonResponse(200, { message: `Estado de la cita cambiado a ${result.newStatus === 1 ? 'activa' : 'cancelada'} satisfactoriamente.` }));
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
 // Seleccionar Usuario
 router.get("/select", async function (req, res) {
     try {
