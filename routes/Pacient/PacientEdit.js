@@ -4,7 +4,7 @@ const { jsonResponse } = require("../lib/jsonResponse");
 const router = express.Router();
 
 // Obtener datos del paciente
-router.get("/", authenticatePatient, async function (req, res) {
+router.get("/datos", authenticatePatient, async function (req, res) {
     const { userCC } = req;
 
     try {
@@ -20,7 +20,7 @@ router.get("/", authenticatePatient, async function (req, res) {
 });
 
 // Actualizar datos del usuario (paciente)
-router.put("/", authenticatePatient, async function (req, res) {
+router.put("/EditarP", authenticatePatient, async function (req, res) {
     const { userCC } = req;
     const { nombreUsuario, apellidoUsuario, emailUsuario, pwdUsuario, direccion, telefonoUsuario, idEps } = req.body;
 

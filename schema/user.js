@@ -674,6 +674,7 @@ const Pacient = {
       return { success: false, error: error.message };
     }
   },
+
   async insertCita(citaData) {
     const {
       dia,
@@ -757,7 +758,6 @@ const Pacient = {
     }
   },
 
-
   async findCitaId(citaId) {
     try {
       const queryStr = `SELECT 
@@ -814,6 +814,7 @@ const Pacient = {
       throw error;
     }
   },
+
   async fetchDoctors() {
     try {
       const queryStr = `
@@ -837,6 +838,7 @@ const Pacient = {
       throw error;
     }
   },
+
   async fetchServices() {
     try {
       const queryStr = `
@@ -872,7 +874,6 @@ const Pacient = {
     }
   },
 
-
   ////////////////////////////////////////////
   //Historia medica
 
@@ -891,6 +892,29 @@ const Pacient = {
             FROM FACTURA_ELECTRONICA a
             INNER JOIN CITAS b ON a.idCita = b.idCita
             WHERE b.idUsuarioCC = ?
+        `;
+
+      const result = await query(queryStr, [UserCC]);
+      return result;
+    } catch (error) {
+      console.error('Error al buscar historial:', error);
+      throw error;
+    }
+  },
+
+  async findFacturasP(UserCC) {
+    try {
+      const queryStr = `
+            SELECT 
+                a.idFactura_Electronica,
+                a.idCita,
+                a.estadoFE,
+                a.idColilla_Pago,
+                a.idAutorizacion_Medica,
+                a.idOrden_Medica 
+            FROM FACTURA_ELECTRONICA a
+            INNER JOIN CITAS b ON a.idCita = b.idCita
+            WHERE b.idUsuarioCC = ? and a.estadoFE = 1
         `;
 
       const result = await query(queryStr, [UserCC]);
@@ -937,6 +961,46 @@ const Pacient = {
     }
   },
 
+  async findUser(userCC){
+    try {
+      const queryStr = `
+        SELECT 
+          u.CC,
+          u.nombreUsuario,
+          u.apellidoUsuario,
+          u.emailUsuario, 
+          u.pwdUsuario, 
+          h.direccion, 
+          h.telefonoUsuario, 
+          h.idEps
+        FROM 
+          USUARIOS u
+        JOIN 
+          hojadevida h ON u.idHoja_Vida = h.idHoja_Vida
+        WHERE 
+          u.CC = ?
+      `;
+
+      const result = await query(queryStr, [
+        user.emailUsuario,
+        user.pwdUsuario,
+        user.direccion,
+        user.telefonoUsuario,
+        user.idEps,
+        userCC
+      ]);
+
+      if (result.affectedRows === 0) {
+        throw new Error('No se pudo actualizar el usuario, CC no encontrado.');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error al actualizar el usuario:', error);
+      throw error;
+    }
+  },
+
   ///////////////////////////////////////////
   //Facturas pendientes
   async findFacturas(UserCC) {
@@ -961,6 +1025,55 @@ const Pacient = {
       throw error;
     }
   },
+
+  async editFactura(idFactura, idColilla) {
+    try {
+      const queryStr = `
+        UPDATE FACTURA_ELECTRONICA
+        SET idColilla_Pago = ?,
+            estadoFE = 0
+        WHERE idFactura_Electronica = ?
+      `;
+  
+      const result = await query(queryStr, [idColilla, idFactura]);
+      return result;
+    } catch (error) {
+      console.error('Error al agregar colilla de pago a la factura:', error);
+      throw error;
+    }
+  },  
+
+  async addColillaEditFactura(idFactura) {
+    const connection = await getConnection();
+    
+    try {
+      await connection.beginTransaction();
+
+      const insertColillaQuery = `
+        INSERT INTO COLILLA_PAGO (estadoCP) 
+        VALUES (0)
+      `;
+
+      const colillaResult = await connection.query(insertColillaQuery);
+
+      const updateFacturaQuery = `
+        UPDATE FACTURA_ELECTRONICA
+        SET idColilla_Pago = ?, estadoFE = 0
+        WHERE idFactura_Electronica = ?
+      `;
+
+      const facturaResult = await connection.query(updateFacturaQuery, [colillaResult.idColilla_Pago, idFactura]);
+
+      await connection.commit(); 
+      return { colillaResult, facturaResult };
+    } catch (error) {
+      await connection.rollback();
+      console.error('Error al crear colilla y actualizar factura:', error);
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 
 };
 
