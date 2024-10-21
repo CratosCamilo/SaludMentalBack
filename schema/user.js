@@ -422,14 +422,18 @@ const UserDoctor = {
               C.hora,
               C.estadoCita,
               S.nombreServicio,
-              D.nombreUsuario AS nombrePaciente,
-              D.apellidoUsuario AS apellidoPaciente
+              D.nombreUsuario AS nombreDoctor,
+              D.apellidoUsuario AS apellidoDoctor,
+              P.nombreUsuario AS nombrePaciente,
+              P.apellidoUsuario AS apellidoPaciente
             FROM 
               CITAS C
-            INNER JOIN 
-              USUARIOS D ON C.idUsuarioCC = D.CC
+           INNER JOIN 
+              USUARIOS D ON C.idDocCC = D.CC
             INNER JOIN 
               SERVICIOS S ON C.idServicio = S.idServicio
+              INNER JOIN 
+              USUARIOS P ON C.idUsuarioCC = P.CC 
             WHERE 
               C.idDocCC = ?
             ORDER BY 
@@ -664,7 +668,7 @@ const Pacient = {
       ];
       console.log(updateQuery, " ", updateValues)
       await query(updateQuery, updateValues);
-      
+
       return { success: true };
 
 
@@ -695,7 +699,7 @@ const Pacient = {
         idUser,
         idDoctor
       ];
-      
+
       await query(citaQuery, citaValues);
 
       return { success: true };
