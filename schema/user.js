@@ -425,6 +425,7 @@ const UserDoctor = {
               D.nombreUsuario AS nombreDoctor,
               D.apellidoUsuario AS apellidoDoctor,
               P.nombreUsuario AS nombrePaciente,
+              P.idHoja_Vida AS idUsuarioCC,
               P.apellidoUsuario AS apellidoPaciente
             FROM 
               CITAS C
