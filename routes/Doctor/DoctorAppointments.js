@@ -45,6 +45,22 @@ router.get("/citas/:CC", async function (req, res) {
     }
 });
 
+router.get("/historial-medico/:id", async function (req, res) {
+    const { id } = req.params; // Obtener el id de la URL
+
+    try {
+        // Realizar la consulta para obtener el historial médico por ID
+        const historialMedico = await UserDoctor.findHistorialMedico(id);
+
+        // Retornar el historial médico, sin importar si se encuentra o no
+        return res.json(jsonResponse(200, { message: "Historial médico obtenido satisfactoriamente", data: historialMedico }));
+    } catch (err) {
+        console.error("Error interno del servidor:", err);
+        res.status(500).json(jsonResponse(500, { error: "Error del servidor" }));
+    }
+});
+
+
 router.get("/doctor/cantUserT/:idDocCC", async function (req, res) {
     const { idDocCC } = req.params;
 

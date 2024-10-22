@@ -413,6 +413,25 @@ const UserAdmin = {
 
 const UserDoctor = {
   // encontrar citas
+
+  async findHistorialMedico(id) {
+    try {
+      // Consulta para verificar si el historial médico existe
+      const queryStr = `SELECT * FROM HISTORIA_MEDICA WHERE idHistoria_Medica = ?`;
+      const result = await query(queryStr, [id]);
+  
+      // Verificar si el resultado contiene datos
+      if (result.length > 0) {
+        return result[0]; // Retorna el historial médico si existe
+      } else {
+        return {}; // Retorna un objeto vacío si no existe
+      }
+    } catch (error) {
+      console.error('Error fetching historial medico by id:', error);
+      throw error; // Manejar el error si ocurre
+    }
+  },
+  
   async findCitas(CC) {
     try {
       const queryStr = `
